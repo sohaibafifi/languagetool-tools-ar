@@ -28,18 +28,21 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.languagetool.Language;
-import org.languagetool.Languages;
+import org.languagetool.UserConfig;
+import org.languagetool.chunking.Chunker;
+import org.languagetool.language.Contributor;
 import org.languagetool.languagemodel.LanguageModel;
+import org.languagetool.rules.Rule;
+import org.languagetool.tagging.Tagger;
+import org.languagetool.tagging.xx.DemoTagger;
 import org.languagetool.tokenizers.SentenceTokenizer;
 import org.languagetool.tokenizers.Tokenizer;
 import org.languagetool.tokenizers.WordTokenizer;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Indexing a text file to ngrams.
@@ -60,13 +63,14 @@ public class TextToNgram implements AutoCloseable {
     private final Map<String, Long> bigramToCount = new HashMap<>();
     private final Map<String, Long> trigramToCount = new HashMap<>();
     private final Map<Integer, LuceneLiveIndex> indexes = new HashMap<>();
+    private final Language language = new Arabic();
 
     private int cacheLimit = 1_000_000;  // max. number of trigrams in HashMap before we flush to Lucene
     private long charCount = 0;
     private long lineCount = 0;
     private long lineFreq = 1;
 
-    public TextToNgram(Language language, File input, File indexTopDir) throws IOException {
+    public TextToNgram(File input, File indexTopDir) throws IOException {
         this.input = input;
         this.indexTopDir = indexTopDir;
         this.sentenceTokenizer = language.getSentenceTokenizer();
@@ -78,13 +82,12 @@ public class TextToNgram implements AutoCloseable {
 
     public static void main(String[] args) throws IOException {
         if (args.length != 4) {
-            System.out.println("Usage: " + TextToNgram.class + " <langCode> <input.txt> <ngramIndexDir>");
+            System.out.println("Usage: " + TextToNgram.class + "<input.txt> <outputDir>");
             System.exit(1);
         }
-        Language language = Languages.getLanguageForShortCode(args[0]);
         File input = new File(args[1]);
-        File outputDir = new File(args[2]);
-        try (TextToNgram prg = new TextToNgram(language, input, outputDir)) {
+        File outputDir = new File(args[2] + "/ar/");
+        try (TextToNgram prg = new TextToNgram(input, outputDir)) {
             prg.indexInputFile();
         }
     }
@@ -173,11 +176,6 @@ public class TextToNgram implements AutoCloseable {
         long startTime = System.currentTimeMillis();
         System.out.println("Writing " + ngramToCount.size() + " cached ngrams to Lucene index (ngramSize=" + ngramSize + ")...");
         LuceneLiveIndex index = indexes.get(ngramSize);
-        // not sure why this doesn't work, should be faster:
-    /*DirectoryReader newReader = DirectoryReader.openIfChanged(reader);
-    if (newReader != null) {
-      reader = newReader;
-    }*/
         index.reader = DirectoryReader.open(index.indexWriter, true);
         index.searcher = new IndexSearcher(index.reader);
         for (Map.Entry<String, Long> entry : ngramToCount.entrySet()) {
@@ -191,7 +189,6 @@ public class TextToNgram implements AutoCloseable {
                 int docNumber = topDocs.scoreDocs[0].doc;
                 Document document = index.reader.document(docNumber);
                 long oldCount = Long.parseLong(document.getField("count").stringValue());
-                //System.out.println(ngram + " -> " + oldCount + "+" + entry.getValue());
                 index.indexWriter.deleteDocuments(ngram);
                 index.indexWriter.addDocument(getDoc(entry.getKey(), oldCount + entry.getValue()));
                 // would probably be faster, but we currently rely on the count being a common field:
@@ -199,7 +196,6 @@ public class TextToNgram implements AutoCloseable {
             } else if (topDocs.totalHits > 1) {
                 throw new RuntimeException("Got more than one hit for: " + ngram);
             }
-            //System.out.println("   " + entry.getKey() + " -> " + entry.getValue());
         }
         if (ngramSize == 1) {
             // TODO: runtime code will crash if there are more than 1000 of these docs, so update instead of delete
@@ -267,14 +263,90 @@ public class TextToNgram implements AutoCloseable {
 
     }
 
-  /**
-   * @since 4.9
-   */
-  public static class ArabicWordTokenizer extends WordTokenizer {
+    /**
+     * @since 4.9
+     */
+    public static class ArabicWordTokenizer extends WordTokenizer {
 
-      @Override
-      public String getTokenizingCharacters() {
-          return super.getTokenizingCharacters() + "،؟؛";
-      }
-  }
+        @Override
+        public String getTokenizingCharacters() {
+            return super.getTokenizingCharacters() + "،؟؛";
+        }
+    }
+
+
+    /*
+     * Keep here for now since the arabic package is not published yet
+     */
+    public class Arabic extends Language implements AutoCloseable {
+
+        private WordTokenizer wordTokenizer;
+        private DemoTagger tagger;
+        private LanguageModel languageModel;
+
+        @Override
+        public String getName() {
+            return "Arabic";
+        }
+
+        @Override
+        public String getShortCode() {
+            return "ar";
+        }
+
+        @Override
+        public String[] getCountries() {
+            return new String[]{"", "SA", "DZ", "BH", "EG", "IQ", "JO", "KW", "LB", "LY", "MA", "OM", "QA", "SD", "SY", "TN", "AE", "YE"};
+        }
+
+        @Nullable
+        @Override
+        public Contributor[] getMaintainers() {
+            return new Contributor[0];
+        }
+
+
+        @Override
+        public WordTokenizer getWordTokenizer() {
+            if (wordTokenizer == null) {
+                wordTokenizer = new TextToNgram.ArabicWordTokenizer();
+            }
+            return wordTokenizer;
+        }
+
+
+        @Override
+        public List<Rule> getRelevantRules(ResourceBundle messages, UserConfig userConfig, Language motherTongue, List<Language> altLanguages) throws IOException {
+            return Arrays.asList(
+
+            );
+        }
+
+        @Override
+        public Tagger getTagger() {
+            if (tagger == null) {
+                tagger = new DemoTagger();
+            }
+            return tagger;
+        }
+
+        @Override
+        public Chunker getChunker() {
+            return null;
+        }
+
+        @Override
+        public synchronized LanguageModel getLanguageModel(File indexDir) throws IOException {
+            languageModel = initLanguageModel(indexDir, languageModel);
+            return languageModel;
+        }
+
+        @Override
+        public void close() throws Exception {
+            if (languageModel != null) {
+                languageModel.close();
+            }
+        }
+    }
+
 }
