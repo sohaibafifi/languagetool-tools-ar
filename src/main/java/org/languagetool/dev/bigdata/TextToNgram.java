@@ -122,7 +122,7 @@ public class TextToNgram implements AutoCloseable {
             float mb = (float) charCount / 1000 / 1000;
             System.out.printf(Locale.ENGLISH, "Indexing line %d (%.2fMB)\n", lineCount, mb);
         }
-        if (lineCount % lineFreq == 0) {
+        if (lineCount % lineFreq != 0) {
             return;
         }
         charCount += line.length();
