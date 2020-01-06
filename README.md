@@ -12,8 +12,7 @@ Most tools are extracted from [languagetool](http://github.com/languagetool-org/
 
 ### Extract sentences from wikipedia dump 
 
-```
-
+```bash
 java -cp languagetool-tools-ar-4.8-jar-with-dependencies.jar org.languagetool.dev.tools.WikipediaSentenceExtractor arwiki-latest-pages-articles.xml arwiki-latest-pages-articles.txt 
 ```
 
@@ -21,14 +20,13 @@ java -cp languagetool-tools-ar-4.8-jar-with-dependencies.jar org.languagetool.de
 
 ### Create an index   
 
-```
-mkdir index
+```bash
 java -cp languagetool-tools-ar-4.8-jar-with-dependencies.jar org.languagetool.dev.tools.TextIndexCreator index arwiki-latest-pages-articles.txt 
 ```
 
 
 ### Generate Lucene Ngrams (1-ngram, 2-ngram, 3-ngram)
 
- ```
+ ```bash
  java -cp languagetool-tools-ar-4.8-jar-with-dependencies.jar org.languagetool.dev.tools.TextToNgram arwiki-latest-pages-articles.txt ngrams
  ```
