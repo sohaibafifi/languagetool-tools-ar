@@ -21,7 +21,7 @@ package dev.bigdata;
 import org.apache.commons.io.FileUtils;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.languagetool.dev.bigdata.TextToNgram;
+import org.languagetool.dev.tools.TextToNgram;
 
 import java.io.File;
 import java.io.IOException;
