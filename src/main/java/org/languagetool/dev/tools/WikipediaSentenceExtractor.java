@@ -24,6 +24,7 @@ import org.languagetool.Language;
 import org.languagetool.dev.wikipedia.WikipediaSentenceSource;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Command line tool to extract sentences from a (optionally bz2-compressed) Wikipedia XML dump.
@@ -45,7 +46,7 @@ class WikipediaSentenceExtractor {
     Language language = new TextToNgram.Arabic();
     try (FileInputStream fis = new FileInputStream(xmlDumpPath);
          BufferedInputStream bis = new BufferedInputStream(fis);
-         FileWriter fw = new FileWriter(outputFile)) {
+         Writer fw = new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8)) {
       InputStream input;
       if (xmlDumpPath.endsWith(".bz2")) {
         input = new CompressorStreamFactory().createCompressorInputStream(bis);
