@@ -25,7 +25,7 @@ jobs:
     - name: Extract sentences from wikipedia dump
       run: |
         wget –quiet https://dumps.wikimedia.org/arwiki/latest/arwiki-latest-pages-articles.xml.bz2
-        java -cp target/languagetool-tools-ar-4.8-jar-with-dependencies.jar org.languagetool.dev.tools.WikipediaSentenceExtractor arwiki-latest-pages-articles.xml arwiki-latest-pages-articles.txt 
+        java -cp target/languagetool-tools-ar-4.8-jar-with-dependencies.jar org.languagetool.dev.tools.WikipediaSentenceExtractor arwiki-latest-pages-articles.xml.bz2 arwiki-latest-pages-articles.txt 
     - name: Create an index
       run: |
         java -cp target/languagetool-tools-ar-4.8-jar-with-dependencies.jar org.languagetool.dev.tools.TextIndexCreator index arwiki-latest-pages-articles.txt 
