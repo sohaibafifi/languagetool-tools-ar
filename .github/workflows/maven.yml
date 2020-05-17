@@ -24,7 +24,7 @@ jobs:
       run: mvn -B package --file pom.xml
     - name: Extract sentences from wikipedia dump
       run: |
-        wget https://dumps.wikimedia.org/arwiki/latest/arwiki-latest-pages-articles.xml.bz2
+        wget –quiet https://dumps.wikimedia.org/arwiki/latest/arwiki-latest-pages-articles.xml.bz2
         java -cp target/languagetool-tools-ar-4.8-jar-with-dependencies.jar org.languagetool.dev.tools.WikipediaSentenceExtractor arwiki-latest-pages-articles.xml arwiki-latest-pages-articles.txt 
     - name: Create an index
       run: |
@@ -32,6 +32,7 @@ jobs:
     - name: Generate Lucene Ngrams (1-ngram, 2-ngram, 3-ngram)
       run: |
         java -cp target/languagetool-tools-ar-4.8-jar-with-dependencies.jar org.languagetool.dev.tools.TextToNgram arwiki-latest-pages-articles.txt ngrams
-
-    
-        
+    - uses: actions/upload-artifact@v1
+      with:
+        name: output
+        path: ${{ runner.workspace }}
